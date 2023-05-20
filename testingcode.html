@@ -1,0 +1,266 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <canvas id="gl" width="600" height="600"></canvas>
+    </body>
+    <script id="fshadercode" type="notjs">
+        //uniform vec4 color;
+        
+        varying vec2 v_texcoord;
+
+        uniform sampler2D u_texture;
+
+        void main(){
+            gl_FragColor = texture2D(u_texture, v_texcoord);
+        }
+    </script>
+    <script id="vshadercode" type="notjs">
+        attribute vec2 a_position;
+        attribute vec2 a_texcoord;
+
+        uniform mat3 trans;
+
+        varying vec2 v_texcoord;
+        void main() {
+            gl_Position = vec4((trans * vec3(a_position, 1)).xy, 0, 1);
+            v_texcoord = a_texcoord;
+        }
+    </script>
+    <script type="module">
+        // import * as m3 from "/assets/js/mat3.js"
+
+        // var am3 = [
+        //     0, 1, 0,
+        //     0, 0, 0,
+        //     1, 1, 1
+        // ]
+        // var out = []
+        // out = m3.create()
+        // out = m3.multiply(out, am3, am3)
+        // console.log(out)
+
+        function main(){
+            var canvas = document.getElementById("gl")
+            var gl = canvas.getContext("webgl")
+            function createShader(gl, type, source) {
+                var shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+                if (success) {
+                    return shader;
+                }
+                
+                console.log("SHADER " + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+            }
+            var vertexShaderSource = document.getElementById("vshadercode").text;
+            var fragmentShaderSource = document.getElementById("fshadercode").text;
+
+            var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+            var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+            function createProgram(gl, vShader, fShader) {
+                var program = gl.createProgram();
+                gl.attachShader(program, vShader);
+                gl.attachShader(program, fShader);
+                gl.linkProgram(program);
+                var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+                if (success) {
+                    return program;
+                }
+                
+                console.log(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+            }
+
+            var program = createProgram(gl, vertexShader, fragmentShader);
+            var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+            var texcoordLocation = gl.getAttribLocation(program, "a_texcoord");
+
+            var matrixLocation = gl.getUniformLocation(program, "trans");
+            var textureLocation = gl.getUniformLocation(program, "u_texture")
+            
+            var positionBuffer = gl.createBuffer();
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+            // var positions = [
+            // -0.5, -0.5,
+            // 0.5, -0.5,
+            // 0.5, 0.5,
+            // -0.5, -0.5,
+            // 0.5, 0.5,
+            // -0.5, 0.5
+            // ];        
+            // var positions = [
+            // 0, 0,
+            // 100, 0,
+            // 0, 100,
+            // 0, 100,
+            // 100, 100,
+            // 100, 0
+            // ];
+            var backgroundPos = [
+                -4000, -4000,
+                -4000, 4000,
+                4000, 4000,
+                4000, 4000,
+                4000, -4000
+                -4000, -4000
+            ]
+
+            var backgroundTexPos = [
+                0, 0,
+                0, 1,
+                1, 1,
+                0, 0,
+                1, 1,
+                1, 0
+            ]
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(backgroundPos), gl.STATIC_DRAW);
+
+            var texCoordBuffer = gl.createBuffer()
+            gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(backgroundTexPos), gl.STATIC_DRAW);
+
+            var texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                            new Uint8Array([0, 0, 0, 0]));
+            var image = new Image();
+            image.src = "images/bigbackgroundimage2.png";
+            image.addEventListener('load', function() {
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+                gl.generateMipmap(gl.TEXTURE_2D);
+            });
+
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.useProgram(program);
+
+            gl.enableVertexAttribArray(positionAttributeLocation);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    
+
+
+
+            var m3 = {
+
+            projection: function(width, height) {
+                return [
+                2 / width, 0, 0,
+                0, -2 / height, 0,
+                -1, 1, 1
+                ];
+            },
+
+            identity: function(){
+                return [
+                    1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1
+                ]
+            },
+
+            multiply: function(a, b){
+                var a00 = a[0]
+                var a01 = a[1]
+                var a02 = a[2]
+                var a10 = a[3]
+                var a11 = a[4]
+                var a12 = a[5]
+                var a20 = a[6]
+                var a21 = a[7]
+                var a22 = a[8]
+                var b00 = b[0]
+                var b01 = b[1]
+                var b02 = b[2]
+                var b10 = b[3]
+                var b11 = b[4]
+                var b12 = b[5]
+                var b20 = b[6]
+                var b21 = b[7]
+                var b22 = b[8]
+
+                var result = []
+                result[0] = b00 * a00 + b01 * a10 + b02 * a20
+                result[1] = b00 * a01 + b01 * a11 + b02 * a21
+                result[2] = b00 * a02 + b01 * a12 + b02 * a22
+
+                result[3] = b10 * a00 + b11 * a10 + b12 * a20
+                result[4] = b10 * a01 + b11 * a11 + b12 * a21
+                result[5] = b10 * a02 + b11 * a12 + b12 * a22
+
+                result[6] = b20 * a00 + b21 * a10 + b22 * a20
+                result[7] = b20 * a01 + b21 * a11 + b22 * a21
+                result[8] = b20 * a02 + b21 * a12 + b22 * a22
+
+                return result
+            },
+
+            translation: function(tx, ty) {
+                return [
+                1, 0, 0,
+                0, 1, 0,
+                tx, ty, 1,
+                ];
+            },
+            
+            rotation: function(angleInRadians) {
+                var c = Math.cos(angleInRadians);
+                var s = Math.sin(angleInRadians);
+                return [
+                c,-s, 0,
+                s, c, 0,
+                0, 0, 1,
+                ];
+            },
+            
+            scale: function(sx, sy) {
+                return [
+                sx, 0, 0,
+                0, sy, 0,
+                0, 0, 1,
+                ];
+            },
+            };
+
+            var size = 2;          // 2 components per iteration
+            var type = gl.FLOAT;   // the data is 32bit floats
+            var normalize = false; // don't normalize the data
+            var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+            var offset = 0;        // start at the beginning of the buffer
+            gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset)
+
+            // gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+
+            var trans = m3.identity()
+            // var time = 0
+            trans = m3.multiply(trans, m3.projection(canvas.width, canvas.height))
+            // trans = m3.multiply(trans, m3.translation(200, 200))
+            function render(){
+            // var time =+ 0.01;
+            // trans = m3.multiply(trans, m3.rotation(time))
+            // trans = m3.multiply(trans, m3.translation(-50, -50))
+
+
+            gl.uniformMatrix3fv(matrixLocation, false, trans);
+            // trans = m3.multiply(trans, m3.translation(50, 50))
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render)
+            }
+            requestAnimationFrame(render)
+        }
+        main();  
+
+    </script>
+</html>
