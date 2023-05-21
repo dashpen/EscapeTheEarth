@@ -67,7 +67,7 @@
         const RADIUS_EARTH = 6378137
         const MASS_EARTH = 5972000000000000000000000
 
-        let d = 216667
+        let d = 100000
         let p = 16667
         let f = 0
 
@@ -92,7 +92,7 @@
             // } );
             const cube = new THREE.Mesh(geometry, rocketMaterial);
             f += 90000
-            d += 10000
+            d += 1000
             rocket.add(cube);
             cube.position.y += rocketFuels
             payload.position.y++
@@ -100,7 +100,7 @@
             console.log("f" + f)
             console.log("d" + d)
             console.log("p" + p)
-            console.log(f + d + p)
+            console.log((f + d))
         }
 
         const scene = new THREE.Scene();
@@ -216,7 +216,7 @@
         const boosterAnim = new THREE.Object3D()
         function startBoosterAnim(){
             boosterAnim.children = []
-            for(let i = 0; i < 25 * rocketFuels; i++){
+            for(let i = 0; i < 25; i++){
                 const yPos = Math.random()
                 const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1)
                 const material = new THREE.MeshBasicMaterial({
@@ -239,55 +239,85 @@
         rocket.add(boosterAnim)
         startBoosterAnim()
         scene.add(rocket)
+        rocket.position.x += 1
+        camera.position.x += 1
         let i = 0
         let t = 0.01666666
+        // let t = 0.25
+        // let t = 1
         let vx = 0
         let vy = 0
-        let x = 0
-        let y = 0
+        let x = rocket.position.x
+        let y = RADIUS_EARTH
         let ax = 0
         let ay = 0
         let m = 0
         let theta = 0
-        let phi = 0
+        let phi = Math.PI / 2
         let firstTop = 0
         function render(){
             i++
-            posChange *= 1.01
-            rocket.position.y += posChange;
-            rocket.position.x += posChange * 0.5;
-
-            m = f * d
+            // console.log(m, f, d)
+            // console.log(theta, phi)
+            // console.log(x, y -RADIUS_EARTH)
+            console.log("velocity", vx, vy)
+            console.log("position", x, y - RADIUS_EARTH)
+            m = f + d
 
             // x = x + vx * t + 0.5 * ax * t * t
             // vx = vx + ax * t
-            f -= f > 0 ? 10000 * t : 0
+            // if(i % 30 == 0){
+            theta = Math.atan(y / x)
+            if(f > 0){
+                f = f - 10000 * t
+                if(i % 2 == 0) startBoosterAnim();
+                ax = ((-398345740000000) * Math.cos(theta) / (x * x + y * y) + (31250000 * Math.cos(phi)) / m )
+                ay = ((-398345740000000) * Math.sin(theta) / (x * x + y * y) + (31250000 * Math.sin(phi)) / m )
+            } else {
+                f = 0
+                m = f + d
+                rocket.remove(boosterAnim)
+                ax = ((-398345740000000) * Math.cos(theta) / (x * x + y * y))
+                ay = ((-398345740000000) * Math.sin(theta) / (x * x + y * y))
+                // ay = -9.8
+            }
+            console.log("accel", ax, ay)
+            // console.log(y - RADIUS_EARTH)
 
-            theta = Math.tan(y / x)
-            
-            ax = ((-398345740000000 + (vx * vx + vy * vy) * (vx * vx + vy * vy)) * Math.cos(theta) / (x * x + y * y) + (31250000 * Math.cos(phi)) / m ) * t * t
-            ay = ((-398345740000000 + (vx * vx + vy * vy) * (vx * vx + vy * vy)) * Math.sin(theta) / (x * x + y * y) + (31250000 * Math.sin(phi)) / m ) * t * t
 
-            x = x + vx
-            vx = vx + ax
-            y = y + vy
-            vy = ay + vy
+            // x = x + vx
+            // vx = vx + ax
+            // y = y + vy
+            // vy = ay + vy
 
+            x = x + vx * t + 0.5 * ax * t * t
+            vx = vx + ax * t
+            y = y + vy * t + 0.5 * ay * t * t
+            vy = vy + ay * t
+
+            // }
+            // }
             rocket.position.x = x
-            rocket.position.y = y
+            rocket.position.y = y  - RADIUS_EARTH
+            console.log(phi)
+            rocket.rotation.z = (phi - Math.PI/2)
 
-            console.log(x, y)
+            // console.log("pos", x, y)
+            // console.log("velocity", vx, vy)
+            // console.log("acceleration", ax, ay)
 
-            if(rocket.position.y < 5){
+            if(rocket.position.y < 50){
                 camera.lookAt(rocket.getWorldPosition(cubePos))
             } else {
                 camera.lookAt(rocket.getWorldPosition(cubePos))
                 rocket.add(camera)
             }
-            if(i % rocketFuels == 0) startBoosterAnim();
+
             renderer.render( scene, camera );
             requestAnimationFrame(render)
         }
+        // camera.position.y += 10
+        // camera.lookAt(rocket.getWorldPosition(cubePos))
         renderer.render( scene, camera );
         // document.addEventListener("mousedown", () => {requestAnimationFrame(render)})
         let fuelButton = document.getElementById("addFuel")
@@ -317,21 +347,22 @@
         let payloadWeightRange = document.getElementById("payloadWeightRange")
         let payloadWeightText = document.getElementById("payloadWeightText")
 
+        payloadWeightRange.value = 16667
         payloadWeightText.value = 16667
 
         launchAngleRange.addEventListener("input", () => {
             let value = launchAngleRange.value
             launchAngleText.value = value
-            const valueInRad = value * Math.PI / 180
-            rocket.rotation.z = -valueInRad
+            const valueInRad = Math.PI / 2 - value * Math.PI / 180
+            rocket.rotation.z = (valueInRad - Math.PI / 2)
             phi = valueInRad
             renderer.render(scene, camera)
         })
         launchAngleText.addEventListener("input", () => {
             let value = launchAngleText.value
             launchAngleRange.value = value
-            const valueInRad = value * Math.PI / 180
-            rocket.rotation.z = -valueInRad
+            const valueInRad = Math.PI / 2 + value * Math.PI / 180
+            rocket.rotation.z = -(valueInRad - Math.PI / 2)
             phi = valueInRad
             renderer.render(scene, camera)
         })
@@ -356,9 +387,14 @@
             p = value
             renderer.render(scene, camera)
         })
-        document.addEventListener("keydown", () => {rocketFuels--})
-    </script>
-    <script>
-
+        document.addEventListener("keydown", (event) => {
+            if(event.keyCode == 37){
+                phi += 0.1
+                console.log("left")
+            } else if(event.keyCode == 39){
+                phi -= 0.1
+                console.log("right")
+            }
+        })
     </script>
 </html>
