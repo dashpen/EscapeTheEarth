@@ -84,7 +84,7 @@
             } );
 
         function addMediumFuel(){
-            const geometry = new THREE.CylinderGeometry( 1, 1, 1 );
+            const geometry = new THREE.CylinderGeometry(1, 1, 1);
             // const material = new THREE.MeshBasicMaterial( 
             // { color: 0x888B8D,
             // //   roughness: 0.5,
@@ -92,7 +92,7 @@
             // } );
             const cube = new THREE.Mesh(geometry, rocketMaterial);
             f += 90000
-            d += 1000
+            d += 10000
             rocket.add(cube);
             cube.position.y += rocketFuels
             payload.position.y++
@@ -279,6 +279,7 @@
                 rocket.remove(boosterAnim)
                 ax = ((-398345740000000) * Math.cos(theta) / (x * x + y * y))
                 ay = ((-398345740000000) * Math.sin(theta) / (x * x + y * y))
+                t = 1
                 // ay = -9.8
             }
             console.log("accel", ax, ay)
