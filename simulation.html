@@ -40,8 +40,14 @@
                     <button id="launchButton">Launch!</button>
                 </div>
                 <div>
+                    <p>Launch Angle</p>
                     <input type="range" id="launchAngleRange" min="0" max="90">
                     <input type="text" id="launchAngleText">
+                </div>
+                <div>
+                    <p>Payload Weight</p>
+                    <input type="range" id="payloadWeightRange" min="0" max="20000">
+                    <input type="text" id="payloadWeightText">
                 </div>
             </div>
         </div>
@@ -238,6 +244,9 @@
         let launchAngleRange = document.getElementById("launchAngleRange")
         let launchAngleText = document.getElementById("launchAngleText")
 
+        let payloadWeightRange = document.getElementById("payloadWeightRange")
+        let payloadWeightText = document.getElementById("payloadWeightText")
+
         launchAngleRange.addEventListener("change", () => {
             let value = launchAngleRange.value
             launchAngleText.value = value
@@ -250,6 +259,22 @@
             rocket.rotation.z = -value * Math.PI / 180
             renderer.render(scene, camera)
         })
+
+        payloadWeightRange.addEventListener("change", () => {
+            let value = payloadWeightRange.value
+            payloadWeightText.value = value
+            payload.radius = value/payloadWeightRange.max
+            renderer.render(scene, camera)
+        })
+        payloadWeightText.addEventListener("change", () => {
+            let value = payloadWeightText.value
+            payloadWeightRange.value = value
+            payload.geometry.dispose();
+            payload.geometry = new THREE.CylinderGeometry(0.5, 1, 16 );
+            payload.radius = value/payloadWeightRange.max
+            renderer.render(scene, camera)
+        })
+        
     </script>
     <script>
 
