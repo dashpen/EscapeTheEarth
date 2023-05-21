@@ -114,7 +114,7 @@
         // document.body.appendChild( renderer.domElement );
 
 
-        const payloadGeometry = new THREE.ConeGeometry( 1, 1, 16 );
+        const payloadGeometry = new THREE.ConeGeometry( 0.8, 0.5, 16 );
         const payloadMaterial = new THREE.MeshBasicMaterial( 
             { color: 0xFFFFFF,
             //   roughness: 0.5,
@@ -122,7 +122,17 @@
             } );
         const payload = new THREE.Mesh( payloadGeometry, payloadMaterial );
         rocket.add( payload );
-        payload.position.y += 1
+        payload.position.y += 1.25
+
+        const payloadBottomGeometry = new THREE.CylinderGeometry( 0.8, 1, 0.5, 16 );
+        const payloadBottomMaterial = new THREE.MeshBasicMaterial( 
+            { color: 0xFFFFFF,
+            //   roughness: 0.5,
+            //   metalness: 0.5,
+            } );
+        const payloadBottom = new THREE.Mesh( payloadBottomGeometry, payloadBottomMaterial );
+        rocket.add( payloadBottom );
+        payloadBottom.position.y += 0.75
 
         const booster = new THREE.Object3D()
 
@@ -151,7 +161,7 @@
         const earth = new THREE.Mesh(earthGeometry, earthMaterial)
 
         scene.add(earth)
-        earth.position.set(0, -1010, 0)
+        earth.position.set(0, -1001.5, 0)
         earth.rotation.z += 0.5
 
         const backdropGeometry = new THREE.SphereGeometry(1000, 32, 32)
@@ -244,34 +254,43 @@
         let launchAngleRange = document.getElementById("launchAngleRange")
         let launchAngleText = document.getElementById("launchAngleText")
 
+        launchAngleRange.value = 0
+        launchAngleText.value = 0
+
         let payloadWeightRange = document.getElementById("payloadWeightRange")
         let payloadWeightText = document.getElementById("payloadWeightText")
 
-        launchAngleRange.addEventListener("change", () => {
+        payloadWeightText.value = 16667
+
+        launchAngleRange.addEventListener("input", () => {
             let value = launchAngleRange.value
             launchAngleText.value = value
             rocket.rotation.z = -value * Math.PI / 180
             renderer.render(scene, camera)
         })
-        launchAngleText.addEventListener("change", () => {
+        launchAngleText.addEventListener("input", () => {
             let value = launchAngleText.value
             launchAngleRange.value = value
             rocket.rotation.z = -value * Math.PI / 180
             renderer.render(scene, camera)
         })
 
-        payloadWeightRange.addEventListener("change", () => {
+        payloadWeightRange.addEventListener("input", () => {
             let value = payloadWeightRange.value
             payloadWeightText.value = value
-            payload.radius = value/payloadWeightRange.max
+            payload.geometry.dispose();
+            payload.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max, 0.5, 16);
+            payloadBottom.geometry.dispose();
+            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max, 1, 0.5, 16);
             renderer.render(scene, camera)
         })
-        payloadWeightText.addEventListener("change", () => {
+        payloadWeightText.addEventListener("input", () => {
             let value = payloadWeightText.value
             payloadWeightRange.value = value
             payload.geometry.dispose();
-            payload.geometry = new THREE.CylinderGeometry(0.5, 1, 16 );
-            payload.radius = value/payloadWeightRange.max
+            payload.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max, 0.5, 16);
+            payloadBottom.geometry.dispose();
+            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max, 1, 0.5, 16);
             renderer.render(scene, camera)
         })
         
