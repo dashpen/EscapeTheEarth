@@ -160,14 +160,26 @@
         scene.add(earth)
         earth.position.set(0, -RADIUS_EARTH + 90, 0)
         earth.rotation.z += 0.5
-
+        
         const backdropGeometry = new THREE.SphereGeometry(RADIUS_EARTH * 2, 32, 32)
-        const backdropMaterial = new THREE.MeshBasicMaterial({
-            map: loader.load("resources/images/bgtest2.png"),
-            side: THREE.BackSide
-        })
-        const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial)
-        scene.add(backdrop)
+
+
+        loader.load('resources/images/bgtest2.png', (texture) => {
+            const backdropMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide
+            });
+            const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
+            scene.add(backdrop);
+            renderer.render(scene, camera)
+        });
+
+        // const backdropMaterial = new THREE.MeshBasicMaterial({
+        //     map: loader.load("resources/images/bgtest2.png"),
+        //     side: THREE.BackSide
+        // })
+        // const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial)
+        // scene.add(backdrop)
 
         const launchPadGeometry = new THREE.BoxGeometry(4, 1, 4)
         const launchPadMat = new THREE.MeshBasicMaterial(
