@@ -27,10 +27,24 @@
                 justify-content: space-between;
                 align-items: flex-start;
             }
+            table,
+            td {
+                border: 1px solid #000000;
+            }
+/* 
+            thead,
+            tfoot {
+                background-color: #333;
+                color: #fff;
+            } */
+
         </style>
     </head>
     <body>
         <div id="playspace">
+            <!-- <div style="display: grid; ">
+
+            </div> -->
             <canvas id="c" width="600", height="600"></canvas>
             <div id="buttons">
                 <div>
@@ -49,6 +63,40 @@
                     <input type="range" id="payloadWeightRange" min="0" max="20000">
                     <input type="text" id="payloadWeightText">
                 </div>
+                <div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>
+                                    
+                                </th>
+                                <th>
+                                    x
+                                </th>
+                                <th>
+                                    y
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>position</td>
+                                <td id="x">0</td>
+                                <td id="y">0</td>
+                            </tr>
+                            <tr>
+                                <td>velocity</td>
+                                <td id="vx">0</td>
+                                <td id="vy">0</td>
+                            </tr>
+                            <tr>
+                                <td>acceleration</td>
+                                <td id="ax">0</td>
+                                <td id="ay">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </body>
@@ -63,6 +111,7 @@
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="module">
         import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         const RADIUS_EARTH = 6378137
         const MASS_EARTH = 5972000000000000000000000
@@ -84,7 +133,7 @@
             } );
 
         function addMediumFuel(){
-            const geometry = new THREE.CylinderGeometry(1, 1, 1);
+            const geometry = new THREE.CylinderGeometry(10, 10, 10, 16);
             // const material = new THREE.MeshBasicMaterial( 
             // { color: 0x888B8D,
             // //   roughness: 0.5,
@@ -94,13 +143,14 @@
             f += 90000
             d += 10000
             rocket.add(cube);
-            cube.position.y += rocketFuels
-            payload.position.y++
+            cube.position.y += rocketFuels * 10
+            payload.position.y += 10
             rocketFuels++
-            console.log("f" + f)
-            console.log("d" + d)
-            console.log("p" + p)
-            console.log((f + d))
+            camera.position.z += 10
+            controls.update();
+            // camera.position.y += 1
+            let rocketPos = new THREE.Vector3()
+            camera.lookAt(rocket.getWorldPosition(rocketPos))
         }
 
         const scene = new THREE.Scene();
@@ -116,11 +166,12 @@
         // document.body.appendChild( renderer.domElement );
 
         const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 1, RADIUS_EARTH * 5)
+        const controls = new OrbitControls( camera, renderer.domElement );
         renderer.setSize(canvas.width, canvas.height)
         // document.body.appendChild( renderer.domElement );
 
 
-        const payloadTopGeometry = new THREE.ConeGeometry( 0.8, 0.5, 16 );
+        const payloadTopGeometry = new THREE.ConeGeometry(8, 5, 16);
         const payloadTopMaterial = new THREE.MeshBasicMaterial( 
             { color: 0xFFFFFF,
             //   roughness: 0.5,
@@ -128,9 +179,9 @@
             } );
         const payloadTop = new THREE.Mesh( payloadTopGeometry, payloadTopMaterial );
         payload.add( payloadTop );
-        payload.position.y += 1.25
+        payload.position.y += 12.5
 
-        const payloadBottomGeometry = new THREE.CylinderGeometry( 0.8, 1, 0.5, 16 );
+        const payloadBottomGeometry = new THREE.CylinderGeometry(8, 10, 5, 16);
         const payloadBottomMaterial = new THREE.MeshBasicMaterial( 
             { color: 0xFFFFFF,
             //   roughness: 0.5,
@@ -138,14 +189,14 @@
             } );
         const payloadBottom = new THREE.Mesh( payloadBottomGeometry, payloadBottomMaterial );
         payload.add( payloadBottom );
-        payloadBottom.position.y -= 0.5
+        payloadBottom.position.y -= 5
 
         const booster = new THREE.Object3D()
 
-        const boosterBaseGeo = new THREE.CylinderGeometry(1, 1, 1)
+        const boosterBaseGeo = new THREE.CylinderGeometry(10, 10, 10, 16)
         const boosterBase = new THREE.Mesh(boosterBaseGeo, rocketMaterial)
         
-        const boosterBoosterGeo = new THREE.ConeGeometry(0.5, 0.5, 6)
+        const boosterBoosterGeo = new THREE.ConeGeometry(5, 5, 16)
         const boosterBoosterMat = new THREE.MeshBasicMaterial(
             {
                 color: 0x36454F
@@ -155,20 +206,23 @@
         booster.add(boosterBase)
         booster.add(boosterBooster)
         // boosterBase.position.y -= 1
-        boosterBooster.position.y -= 0.5
+        boosterBooster.position.y -= 5
         rocket.add(booster)
 
-        const earthGeometry = new THREE.SphereGeometry(RADIUS_EARTH, 256, 256)
+        const earthGeometry = new THREE.SphereGeometry(RADIUS_EARTH, 128, 128)
         const loader = new THREE.TextureLoader()
+        
         const earthMaterial = new THREE.MeshBasicMaterial({
-            color: 0x228B22,
-            // map: loader.load("resources/images/bigbackgroundimage2.png")
+            // color: 0x228B22,
+            map: loader.load("resources/images/8k_earth_daymap.jpg")
         })
         const earth = new THREE.Mesh(earthGeometry, earthMaterial)
 
         scene.add(earth)
-        earth.position.set(0, -RADIUS_EARTH + 90, 0)
+        earth.position.set(0, -RADIUS_EARTH + 75, 0)
         earth.rotation.z += 0.5
+        earth.rotation.y += 0.5
+        earth.rotation.x += 0.5
         
         const backdropGeometry = new THREE.SphereGeometry(RADIUS_EARTH * 2, 32, 32)
 
@@ -190,15 +244,15 @@
         // const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial)
         // scene.add(backdrop)
 
-        const launchPadGeometry = new THREE.BoxGeometry(4, 1, 4)
+        const launchPadGeometry = new THREE.BoxGeometry(40, 10, 40)
         const launchPadMat = new THREE.MeshBasicMaterial(
             {
                 color: 0xD2D1CD
             }
         )
         const launchPad = new THREE.Mesh(launchPadGeometry, launchPadMat)
-        // rocket.add(launchPad)
-        launchPad.position.y -= 1.25
+        rocket.add(launchPad)
+        launchPad.position.y -= 12.5
         // backdrop.position.set(0, 0, -700)
         // backdrop.rotation.z += Math.PI
 
@@ -206,7 +260,8 @@
         // const light = new THREE.AmbientLight(0xFFFFFF, 1);
         // light.position.set(0, 10, -1);
         // scene.add(light);
-        camera.position.z = 5;
+        camera.position.z = 50;
+        controls.update();
         // document.addEventListener("keydown", () => {
         //     addMediumFuel()
         //     renderer.render( scene, camera );
@@ -218,7 +273,7 @@
             boosterAnim.children = []
             for(let i = 0; i < 25; i++){
                 const yPos = Math.random()
-                const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1)
+                const geometry = new THREE.BoxGeometry(1, 1, 1)
                 const material = new THREE.MeshBasicMaterial({
                     color: "red"
                 })
@@ -227,20 +282,22 @@
                 plane.rotation.y = Math.random() * Math.PI
                 plane.rotation.x = Math.random() * Math.PI
                 plane.rotation.z = Math.random() * Math.PI
-                plane.position.x = (Math.random() * (yPos > 0.5 ? (0.25/yPos) : 1)) * ((Math.random() > 0.5) ? -1 : 1)
-                plane.position.y = yPos
-                plane.position.z = (Math.random() * (yPos > 0.5 ? (0.25/yPos) : 1)) * ((Math.random() > 0.5) ? -1 : 1)
+                plane.position.x = (Math.random() * (yPos > 0.5 ? (0.25/yPos) : 1)) * ((Math.random() > 0.5) ? -1 : 1) * 10
+                plane.position.y = yPos * 10
+                plane.position.z = (Math.random() * (yPos > 0.5 ? (0.25/yPos) : 1)) * ((Math.random() > 0.5) ? -1 : 1) * 10
                 boosterAnim.add(plane)
             }
             // scene.add(boosterAnim)
 
         }
-        boosterAnim.position.y -= 1.75
+        boosterAnim.position.y -= 17.5
         rocket.add(boosterAnim)
-        startBoosterAnim()
+        // startBoosterAnim()
         scene.add(rocket)
+        // rocket.scale.set(2, 2, 2)
         rocket.position.x += 1
         camera.position.x += 1
+        controls.update();
         let i = 0
         let t = 0.01666666
         // let t = 0.25
@@ -255,18 +312,20 @@
         let theta = 0
         let phi = Math.PI / 2
         let firstTop = 0
+
+        let tableX = document.getElementById("x")
+        let tableY = document.getElementById("y")
+        let tableVX = document.getElementById("vx")
+        let tableVY = document.getElementById("vy")
+        let tableAX = document.getElementById("ax")
+        let tableAY = document.getElementById("ay")
+
+
         function render(){
+            controls.update();
             i++
-            // console.log(m, f, d)
-            // console.log(theta, phi)
-            // console.log(x, y -RADIUS_EARTH)
-            console.log("velocity", vx, vy)
-            console.log("position", x, y - RADIUS_EARTH)
             m = f + d
 
-            // x = x + vx * t + 0.5 * ax * t * t
-            // vx = vx + ax * t
-            // if(i % 30 == 0){
             theta = Math.atan(y / x)
             if(f > 0){
                 f = f - 10000 * t
@@ -280,16 +339,7 @@
                 ax = ((-398345740000000) * Math.cos(theta) / (x * x + y * y))
                 ay = ((-398345740000000) * Math.sin(theta) / (x * x + y * y))
                 t = 1
-                // ay = -9.8
             }
-            console.log("accel", ax, ay)
-            // console.log(y - RADIUS_EARTH)
-
-
-            // x = x + vx
-            // vx = vx + ax
-            // y = y + vy
-            // vy = ay + vy
 
             x = x + vx * t + 0.5 * ax * t * t
             vx = vx + ax * t
@@ -300,12 +350,14 @@
             // }
             rocket.position.x = x
             rocket.position.y = y  - RADIUS_EARTH
-            console.log(phi)
             rocket.rotation.z = (phi - Math.PI/2)
 
-            // console.log("pos", x, y)
-            // console.log("velocity", vx, vy)
-            // console.log("acceleration", ax, ay)
+            tableX.innerHTML = x
+            tableY.innerHTML = y - RADIUS_EARTH
+            tableVX.innerHTML = vx
+            tableVY.innerHTML = vy
+            tableAX.innerHTML = ax
+            tableAY.innerHTML = ay
 
             if(rocket.position.y < 50){
                 camera.lookAt(rocket.getWorldPosition(cubePos))
@@ -372,9 +424,9 @@
             let value = payloadWeightRange.value
             payloadWeightText.value = value
             payloadTop.geometry.dispose();
-            payloadTop.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max, 0.5, 16);
+            payloadTop.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max * 10, 5, 16);
             payloadBottom.geometry.dispose();
-            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max, 1, 0.5, 16);
+            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max * 10, 10, 5, 16);
             p = value
             renderer.render(scene, camera)
         })
@@ -382,19 +434,17 @@
             let value = payloadWeightText.value
             payloadWeightRange.value = value
             payloadTop.geometry.dispose();
-            payloadTop.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max, 0.5, 16);
+            payloadTop.geometry = new THREE.ConeGeometry(value/payloadWeightRange.max * 10, 5, 16);
             payloadBottom.geometry.dispose();
-            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max, 1, 0.5, 16);
+            payloadBottom.geometry = new THREE.CylinderGeometry(value/payloadWeightRange.max * 10, 10, 5, 16);
             p = value
             renderer.render(scene, camera)
         })
         document.addEventListener("keydown", (event) => {
             if(event.keyCode == 37){
-                phi += 0.1
-                console.log("left")
+                phi += Math.PI/32
             } else if(event.keyCode == 39){
-                phi -= 0.1
-                console.log("right")
+                phi -= Math.PI/32
             }
         })
     </script>
